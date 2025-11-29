@@ -1,42 +1,54 @@
 package edu.najah.cap.advance.assignments.assignment1;
 
 import edu.najah.cap.advance.assignments.assignment1.connections.ConnectionManager;
-import edu.najah.cap.advance.assignments.assignment1.executor.JobExecutor;
+import edu.najah.cap.advance.assignments.assignment1.executor.*;
 import edu.najah.cap.advance.assignments.assignment1.job.Job;
 import edu.najah.cap.advance.assignments.assignment1.model.User;
-import edu.najah.cap.advance.assignments.assignment1.templates.TemplateManager;
+import edu.najah.cap.advance.assignments.assignment1.templates.*;
 
 import java.util.Arrays;
 
 public class MainApp {
     public static void main(String[] args) {
-        System.out.println("=== TMPS Naive Starter App ===");
+        System.out.println("=== TMPS Refactored App (Prototype + Strategy + Proxy) ===");
 
-        // create a naive ConnectionManager (not a pool)
-        ConnectionManager connManager = new ConnectionManager();
+        ConnectionManager connectionManager = new ConnectionManager();
 
-        // naive TemplateManager (builds templates from scratch each time)
-        TemplateManager templateManager = new TemplateManager();
+        JobTemplateRegistry templateRegistry = new JobTemplateRegistry();
 
-        // naive executor (does everything with if/else)
-        JobExecutor executor = new JobExecutor(connManager);
+        templateRegistry.register("EMAIL",
+                new EmailJobTemplate("Default Email Template",
+                        "priority=HIGH;sender=system",
+                        "Hello user, this is a default email."));
 
-        User alice = new User("alice", Arrays.asList("EMAIL", "REPORT")); // incomplete permissions
+        templateRegistry.register("DATA",
+                new DataProcessingJobTemplate("Default Data Job",
+                        "batchSize=1000;source=db1",
+                        "SELECT * FROM source_table"));
 
-        // Demo: create a report job from template and execute
-        System.out.println("\n--- Create Report Job from template (naive build) ---");
+        templateRegistry.register("REPORT",
+                new ReportJobTemplate("Default Report Template",
+                        "format=PDF;orientation=portrait",
+                        "This is the default report body."));
 
-        //TODO problem 1: each time want to create job, it takes time to load and create job which includes creating template and then create job
-        Job reportJob = templateManager.buildReportJobTemplate("MonthlyReport", "format=PDF;brand=TaskMaster").createJobInstance(); // builds from scratch
+        TemplateManager templateManager = new TemplateManager(templateRegistry);
+
+        JobStrategyFactory strategyFactory = new JobStrategyFactory();
+
+        JobExecutor realExecutor = new JobExecutor(connectionManager, strategyFactory);
+
+        JobExecutorProxy executorProxy = new JobExecutorProxy(realExecutor, connectionManager);
+
+        User alice = new User("alice", Arrays.asList("EMAIL", "REPORT"));
+
+        System.out.println("\n--- Create & Execute REPORT job (Prototype + Proxy) ---");
+        Job reportJob = templateManager.createReportJob("job-1");
         reportJob.setRequestedBy(alice);
+        executorProxy.executeJob(reportJob);
 
-        System.out.println("\n--- Execute job (naive executor) ---");
-        executor.executeJob(reportJob);
-
-        Job reportJob2 = templateManager.buildEmailJobTemplate("Monthly email Report", "format=PDF;all=true").createJobInstance(); // builds from scratch
-        reportJob2.setRequestedBy(alice);
-
-        System.out.println("\n--- Execute job (naive executor) ---");
-        executor.executeJob(reportJob2);
+        System.out.println("\n--- Create & Execute EMAIL job (Prototype + Proxy) ---");
+        Job emailJob = templateManager.createEmailJob("job-2");
+        emailJob.setRequestedBy(alice);
+        executorProxy.executeJob(emailJob);
     }
 }

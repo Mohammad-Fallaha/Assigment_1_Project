@@ -2,28 +2,44 @@ package edu.najah.cap.advance.assignments.assignment1.templates;
 
 import edu.najah.cap.advance.assignments.assignment1.job.Job;
 
-/*
- * Naive representation of a heavy template. It includes a method createJobInstance()
- * that builds a Job object from the template.
- */
-public class HeavyTemplate {
+public class HeavyTemplate implements JobPrototype {
+
     private final String type;
     private final String name;
     private final String config;
-    private final String templateBody;
+    private final String body;
 
-    public HeavyTemplate(String type, String name, String config, String templateBody) {
+    public HeavyTemplate(String type, String name, String config, String body) {
         this.type = type;
         this.name = name;
         this.config = config;
-        this.templateBody = templateBody;
+        this.body = body;
     }
 
-    // naive: creates a new Job from scratch (no clone/prototype)
-    public Job createJobInstance() {
-        String id = templateBody + " _ " + type + "-" + System.currentTimeMillis();
+    @Override
+    public JobPrototype clonePrototype() {
+        return new HeavyTemplate(type, name, config, body);
+    }
+
+    @Override
+    public Job createJobInstance(String id) {
         return new Job(id, type, name, config);
     }
 
+    @Override
+    public String getType() {
+        return type;
+    }
 
+    public String getName() {
+        return name;
+    }
+
+    public String getConfig() {
+        return config;
+    }
+
+    public String getBody() {
+        return body;
+    }
 }
